@@ -19,7 +19,7 @@ use leafwing_input_manager::{
     action_state::ActionState, input_map::InputMap, plugin::InputManagerPlugin, InputManagerBundle,
 };
 use physics::{ColliderChild, ControllerBundle, RigidBodyBundle};
-use rand::Rng;
+use rand::{seq::IteratorRandom, Rng};
 
 use std::{collections::HashMap, time::Duration};
 
@@ -90,7 +90,12 @@ fn update_world(
     if time.elapsed() - *last_update > Duration::from_millis(next_spawn_ms) {
         *last_update = time.elapsed();
         // spawn new
-        let mut model = models.models.get("enemy1").unwrap().clone();
+        let model_key = models
+            .models
+            .keys()
+            .choose(&mut rand::thread_rng())
+            .unwrap();
+        let mut model = models.models.get(model_key).unwrap().clone();
         model.spritesheet.transform.translation.x = 200.0;
         spawn_enemy(commands, model);
     }
@@ -132,43 +137,121 @@ fn setup_large_enemy(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    let idle_set = asset_server.load("tiles/dungeon.png");
+    let mut model_map = HashMap::new();
 
-    let layout = TextureAtlasLayout::from_grid(
-        Vec2::new(32.0, 32.0),
-        8,
-        1,
-        None,
-        Some(Vec2::new(16.0, 16.0 + 13.0 * 32.0)),
-    );
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    let animation_indices = AnimationIndices { first: 0, last: 5 };
-    let bundle = Model {
-        animation: AnimationBundle {
-            indices: animation_indices.clone(),
-            timer: AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
-        },
-        spritesheet: SpriteSheetBundle {
-            texture: idle_set,
-            atlas: TextureAtlas {
-                layout: texture_atlas_layout,
-                index: animation_indices.first,
+    {
+        let idle_set = asset_server.load("tiles/dungeon.png");
+        let layout = TextureAtlasLayout::from_grid(
+            Vec2::new(32.0, 32.0),
+            8,
+            1,
+            None,
+            Some(Vec2::new(16.0, 16.0 + 13.0 * 32.0)),
+        );
+        let texture_atlas_layout = texture_atlas_layouts.add(layout);
+        let animation_indices = AnimationIndices { first: 0, last: 5 };
+        let bundle = Model {
+            animation: AnimationBundle {
+                indices: animation_indices.clone(),
+                timer: AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
             },
-            sprite: Sprite {
-                flip_x: true,
+            spritesheet: SpriteSheetBundle {
+                texture: idle_set,
+                atlas: TextureAtlas {
+                    layout: texture_atlas_layout,
+                    index: animation_indices.first,
+                },
+                sprite: Sprite {
+                    flip_x: true,
+                    ..Default::default()
+                },
+                transform: Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
                 ..Default::default()
             },
-            transform: Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
-            ..Default::default()
-        },
-        collider: ColliderChild {
-            collider: Collider::capsule_y(10.0, 5.0),
-            ..Default::default()
-        },
-    };
+            collider: ColliderChild {
+                collider: Collider::capsule_y(10.0, 5.0),
+                ..Default::default()
+            },
+        };
 
-    let mut model_map = HashMap::new();
-    model_map.insert("enemy1".to_string(), bundle);
+        model_map.insert("enemy1".to_string(), bundle);
+    }
+
+    {
+        let idle_set = asset_server.load("tiles/dungeon.png");
+        let layout = TextureAtlasLayout::from_grid(
+            Vec2::new(32.0, 32.0),
+            8,
+            1,
+            None,
+            Some(Vec2::new(16.0, 16.0 + 10.0 * 32.0)),
+        );
+        let texture_atlas_layout = texture_atlas_layouts.add(layout);
+        let animation_indices = AnimationIndices { first: 0, last: 5 };
+        let bundle = Model {
+            animation: AnimationBundle {
+                indices: animation_indices.clone(),
+                timer: AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
+            },
+            spritesheet: SpriteSheetBundle {
+                texture: idle_set,
+                atlas: TextureAtlas {
+                    layout: texture_atlas_layout,
+                    index: animation_indices.first,
+                },
+                sprite: Sprite {
+                    flip_x: true,
+                    ..Default::default()
+                },
+                transform: Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
+                ..Default::default()
+            },
+            collider: ColliderChild {
+                collider: Collider::capsule_y(10.0, 5.0),
+                ..Default::default()
+            },
+        };
+
+        model_map.insert("enemy2".to_string(), bundle);
+    }
+
+    {
+        let idle_set = asset_server.load("tiles/dungeon.png");
+        let layout = TextureAtlasLayout::from_grid(
+            Vec2::new(32.0, 64.0),
+            8,
+            1,
+            None,
+            Some(Vec2::new(16.0, 16.0 + 11.0 * 32.0)),
+        );
+        let texture_atlas_layout = texture_atlas_layouts.add(layout);
+        let animation_indices = AnimationIndices { first: 0, last: 5 };
+        let bundle = Model {
+            animation: AnimationBundle {
+                indices: animation_indices.clone(),
+                timer: AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
+            },
+            spritesheet: SpriteSheetBundle {
+                texture: idle_set,
+                atlas: TextureAtlas {
+                    layout: texture_atlas_layout,
+                    index: animation_indices.first,
+                },
+                sprite: Sprite {
+                    flip_x: true,
+                    ..Default::default()
+                },
+                transform: Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
+                ..Default::default()
+            },
+            collider: ColliderChild {
+                collider: Collider::capsule_y(10.0, 5.0),
+                ..Default::default()
+            },
+        };
+
+        model_map.insert("enemy3".to_string(), bundle);
+    }
 
     commands.insert_resource(Models { models: model_map });
 }
