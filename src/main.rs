@@ -55,14 +55,6 @@ fn main() {
 #[derive(Component, Default)]
 pub struct Despawner;
 
-#[derive(Component, Default, Hash, PartialEq, Eq, Debug)]
-pub enum CharacterAnimationState {
-    #[default]
-    Running,
-    Jumping,
-    Ducking,
-}
-
 fn spawn_enemy(mut commands: Commands, model: Model) {
     info!("Spawning enemy");
     let enemy = EnemyBundle {
@@ -110,7 +102,7 @@ fn setup(mut commands: Commands) {
 }
 
 fn setup_world(mut commands: Commands) {
-    // spawn initial world
+    // spawn initial world#[serde(default)]
     // Spawn ground (fixed)
     let ground_bundle = RigidBodyBundle {
         body: RigidBody::Fixed,

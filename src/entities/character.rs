@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use crate::{
     animation::{AnimationBundle, AnimationIndices, AnimationTimer, Model},
     physics::{ColliderChild, ControllerBundle},
-    CharacterAnimationState,
 };
 
 #[derive(Component, Default)]
@@ -18,6 +17,14 @@ pub struct CharacterBundle {
     pub controller: ControllerBundle,
 
     pub character: Character,
+}
+
+#[derive(Component, Default, Hash, PartialEq, Eq, Debug)]
+pub enum CharacterAnimationState {
+    #[default]
+    Running,
+    Jumping,
+    Ducking,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
