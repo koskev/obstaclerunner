@@ -5,7 +5,7 @@ use bevy::{prelude::*, reflect::serde, window::PrimaryWindow};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::{
     dynamics::{LockedAxes, RigidBody, Velocity},
-    geometry::{ActiveEvents, Collider, Sensor},
+    geometry::{ActiveEvents, Collider, CollisionGroups, Sensor},
     pipeline::CollisionEvent,
     plugin::{NoUserData, RapierConfiguration, RapierPhysicsPlugin},
     render::RapierDebugRenderPlugin,
@@ -19,7 +19,7 @@ use input::PlayerAction;
 use leafwing_input_manager::{
     action_state::ActionState, input_map::InputMap, plugin::InputManagerPlugin, InputManagerBundle,
 };
-use physics::{ColliderChild, ControllerBundle, RigidBodyBundle};
+use physics::{ColliderChild, CollisionGroup, ControllerBundle, RigidBodyBundle};
 use rand::{seq::IteratorRandom, Rng};
 
 use std::{collections::HashMap, fs::File, time::Duration};
@@ -106,6 +106,10 @@ fn setup_world(mut commands: Commands) {
     // Spawn ground (fixed)
     let ground_bundle = RigidBodyBundle {
         body: RigidBody::Fixed,
+        collision_group: CollisionGroups::new(
+            CollisionGroup::Wall.group() | CollisionGroup::Common.group(),
+            CollisionGroup::All.group(),
+        ),
         ..Default::default()
     };
     commands

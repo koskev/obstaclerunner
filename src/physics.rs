@@ -21,10 +21,24 @@ pub struct RigidBodyBundle {
     pub collider: Collider,
 }
 
-#[derive(Bundle, Clone, Default)]
+#[derive(Bundle, Clone)]
 pub struct ColliderChild {
     pub collider: Collider,
     pub transform: TransformBundle,
+    pub collision_group: CollisionGroups,
+}
+
+impl Default for ColliderChild {
+    fn default() -> Self {
+        Self {
+            collider: Collider::default(),
+            transform: TransformBundle::default(),
+            collision_group: CollisionGroups::new(
+                CollisionGroup::Common.group(),
+                CollisionGroup::Common.group(),
+            ),
+        }
+    }
 }
 
 impl Default for RigidBodyBundle {

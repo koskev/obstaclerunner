@@ -1,22 +1,20 @@
 use std::fs::File;
 
 use bevy::prelude::*;
-use bevy_rapier2d::{
-    dynamics::{LockedAxes, Velocity},
-    geometry::Collider,
-};
+use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
 
 use crate::{
-    animation::{AnimationBundle, AnimationIndices, AnimationTimer, Model},
     input::PlayerAction,
-    physics::{ColliderChild, ControllerBundle},
+    physics::{CollisionGroup, ControllerBundle},
 };
 
 use super::character::{CharacterBundle, CharacterProperty};
 
 #[derive(Component, Default)]
-pub struct Player;
+pub struct Player {
+    pub is_grounded: bool,
+}
 
 #[derive(Component, Default)]
 pub struct PlayerCamera;
@@ -56,11 +54,41 @@ impl Default for PlayerBundle {
         }
     }
 }
-fn player_jump(mut q_player: Query<(&mut Velocity, &ActionState<PlayerAction>), With<Player>>) {
-    for (mut velocity, input_data) in &mut q_player {
+fn player_jump(
+    mut q_player: Query<(&mut Velocity, &ActionState<PlayerAction>, &Player), With<Player>>,
+) {
+    for (mut velocity, input_data, player) in &mut q_player {
         if input_data.just_pressed(&PlayerAction::Jump) {
-            info!("jump");
-            velocity.linvel = Vec2::new(0.0, 1.0) * 300.0;
+            if player.is_grounded {
+                info!("jump");
+                velocity.linvel = Vec2::new(0.0, 1.0) * 300.0;
+            }
+        }
+    }
+}
+
+fn ground_check(
+    mut q_player: Query<(&mut Player, &Transform)>,
+    rapier_context: Res<RapierContext>,
+) {
+    for (mut player, transform) in &mut q_player {
+        let source = transform.translation.xy();
+        let direction = Vec2::new(0.0, -1.0);
+        // TODO: read from player
+        let toi = 17.0;
+        if let Some((_hit_entity, _intersection_toi)) = rapier_context.cast_ray(
+            source,
+            direction,
+            toi,
+            false,
+            QueryFilter::new().groups(CollisionGroups::new(
+                CollisionGroup::Common.group(),
+                CollisionGroup::Wall.group(),
+            )),
+        ) {
+            player.is_grounded = true;
+        } else {
+            player.is_grounded = false;
         }
     }
 }
@@ -96,6 +124,7 @@ impl Plugin for PlayerPlugin {
         app.add_systems(Startup, setup_player)
             .add_systems(Update, player_jump)
             .add_systems(Update, player_duck)
-            .add_systems(Update, player_death);
+            .add_systems(Update, player_death)
+            .add_systems(Update, ground_check);
     }
 }

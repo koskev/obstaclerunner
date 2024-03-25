@@ -122,6 +122,7 @@ impl CharacterProperty {
                         local: Transform::from_translation(collider_props.translation.extend(0.0)),
                         ..Default::default()
                     },
+                    ..Default::default()
                 })
                 .collect(),
         };
