@@ -1,3 +1,5 @@
+use std::fs::File;
+
 use bevy::prelude::*;
 use bevy_rapier2d::{
     dynamics::{LockedAxes, Velocity},
@@ -11,7 +13,7 @@ use crate::{
     physics::{ColliderChild, ControllerBundle},
 };
 
-use super::character::CharacterBundle;
+use super::character::{CharacterBundle, CharacterProperty};
 
 #[derive(Component, Default)]
 pub struct Player;
@@ -72,46 +74,19 @@ fn setup_player(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    let idle_set = asset_server.load("tiles/dungeon.png");
+    let player_file = File::open("assets/player.yaml");
+    match player_file {
+        Ok(f) => {
+            let player: CharacterProperty = serde_yaml::from_reader(f).unwrap();
+            let model = player.get_model(&asset_server, &mut texture_atlas_layouts);
+            // spawn player
+            let player_bundle = PlayerBundle::default();
 
-    let layout = TextureAtlasLayout::from_grid(
-        Vec2::new(16.0, 32.0),
-        9,
-        1,
-        None,
-        Some(Vec2::new(8.0 * 16.0, 0.0)),
-    );
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    let animation_indices = AnimationIndices { first: 0, last: 6 };
-    let bundle = Model {
-        animation: AnimationBundle {
-            indices: animation_indices.clone(),
-            timer: AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
-        },
-        spritesheet: SpriteSheetBundle {
-            texture: idle_set,
-            atlas: TextureAtlas {
-                layout: texture_atlas_layout,
-                index: animation_indices.first,
-            },
-            transform: Transform::from_translation(Vec3::new(0.0, 15.0, 0.0)),
-            ..Default::default()
-        },
-        colliders: vec![ColliderChild {
-            collider: Collider::capsule_y(3.5, 5.0),
-            transform: TransformBundle {
-                local: Transform::from_translation(Vec3::new(0.0, -8.0, 0.0)),
-                ..Default::default()
-            },
-            ..Default::default()
-        }],
-    };
-
-    // spawn player
-    let player_bundle = PlayerBundle::default();
-
-    let entity_commands = commands.spawn(player_bundle);
-    bundle.spawn(entity_commands);
+            let entity_commands = commands.spawn(player_bundle);
+            model.spawn(entity_commands);
+        }
+        Err(e) => error!("Failed to load player! {}", e),
+    }
 }
 
 pub struct PlayerPlugin;

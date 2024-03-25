@@ -66,6 +66,7 @@ pub struct CharacterProperty {
     padding: Vec2,
     offset_tiles: Vec2,
     offset_fixed: Vec2,
+    flip_x: bool,
     animation_indices: AnimationIndices,
     animation_speed: f32,
     colliders: Vec<ColliderProperties>,
@@ -106,7 +107,7 @@ impl CharacterProperty {
                     index: self.animation_indices.first,
                 },
                 sprite: Sprite {
-                    flip_x: true,
+                    flip_x: self.flip_x,
                     ..Default::default()
                 },
                 transform: Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
