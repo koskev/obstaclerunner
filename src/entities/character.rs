@@ -63,8 +63,9 @@ pub struct CharacterProperty {
     tile_size: Vec2,
     rows: usize,
     columns: usize,
-    padding: Option<Vec2>,
-    offset: Option<Vec2>,
+    padding: Vec2,
+    offset_tiles: Vec2,
+    offset_fixed: Vec2,
     animation_indices: AnimationIndices,
     animation_speed: f32,
     colliders: Vec<ColliderProperties>,
@@ -86,8 +87,8 @@ impl CharacterProperty {
             self.tile_size,
             self.columns,
             self.rows,
-            self.padding,
-            self.offset,
+            Some(self.padding),
+            Some(self.offset_fixed + self.offset_tiles * self.tile_size),
         );
         let texture_atlas_layout = texture_atlas_layouts.add(layout);
         let model = Model {
