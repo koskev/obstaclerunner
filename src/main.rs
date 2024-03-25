@@ -1,7 +1,7 @@
 use animation::{
     animate_sprites, AnimationBundle, AnimationIndices, AnimationTimer, Model, Models,
 };
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{prelude::*, reflect::serde, window::PrimaryWindow};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::{
     dynamics::{LockedAxes, RigidBody, Velocity},
@@ -11,7 +11,8 @@ use bevy_rapier2d::{
     render::RapierDebugRenderPlugin,
 };
 use entities::{
-    enemy::Enemy,
+    character::{CharacterProperties, CharacterProperty},
+    enemy::{self, Enemy},
     player::{Player, PlayerBundle, PlayerCameraBundle, PlayerPlugin},
 };
 use input::PlayerAction;
@@ -21,7 +22,7 @@ use leafwing_input_manager::{
 use physics::{ColliderChild, ControllerBundle, RigidBodyBundle};
 use rand::{seq::IteratorRandom, Rng};
 
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, fs::File, time::Duration};
 
 use crate::entities::enemy::EnemyBundle;
 
@@ -138,118 +139,18 @@ fn setup_large_enemy(
 ) {
     let mut model_map = HashMap::new();
 
-    {
-        let idle_set = asset_server.load("tiles/dungeon.png");
-        let layout = TextureAtlasLayout::from_grid(
-            Vec2::new(32.0, 32.0),
-            8,
-            1,
-            None,
-            Some(Vec2::new(16.0, 16.0 + 13.0 * 32.0)),
-        );
-        let texture_atlas_layout = texture_atlas_layouts.add(layout);
-        let animation_indices = AnimationIndices { first: 0, last: 5 };
-        let bundle = Model {
-            animation: AnimationBundle {
-                indices: animation_indices.clone(),
-                timer: AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
-            },
-            spritesheet: SpriteSheetBundle {
-                texture: idle_set,
-                atlas: TextureAtlas {
-                    layout: texture_atlas_layout,
-                    index: animation_indices.first,
-                },
-                sprite: Sprite {
-                    flip_x: true,
-                    ..Default::default()
-                },
-                transform: Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
-                ..Default::default()
-            },
-            collider: ColliderChild {
-                collider: Collider::capsule_y(10.0, 5.0),
-                ..Default::default()
-            },
-        };
-
-        model_map.insert("enemy1".to_string(), bundle);
-    }
-
-    {
-        let idle_set = asset_server.load("tiles/dungeon.png");
-        let layout = TextureAtlasLayout::from_grid(
-            Vec2::new(32.0, 32.0),
-            8,
-            1,
-            None,
-            Some(Vec2::new(16.0, 16.0 + 10.0 * 32.0)),
-        );
-        let texture_atlas_layout = texture_atlas_layouts.add(layout);
-        let animation_indices = AnimationIndices { first: 0, last: 5 };
-        let bundle = Model {
-            animation: AnimationBundle {
-                indices: animation_indices.clone(),
-                timer: AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
-            },
-            spritesheet: SpriteSheetBundle {
-                texture: idle_set,
-                atlas: TextureAtlas {
-                    layout: texture_atlas_layout,
-                    index: animation_indices.first,
-                },
-                sprite: Sprite {
-                    flip_x: true,
-                    ..Default::default()
-                },
-                transform: Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
-                ..Default::default()
-            },
-            collider: ColliderChild {
-                collider: Collider::capsule_y(10.0, 5.0),
-                ..Default::default()
-            },
-        };
-
-        model_map.insert("enemy2".to_string(), bundle);
-    }
-
-    {
-        let idle_set = asset_server.load("tiles/dungeon.png");
-        let layout = TextureAtlasLayout::from_grid(
-            Vec2::new(32.0, 64.0),
-            8,
-            1,
-            None,
-            Some(Vec2::new(16.0, 16.0 + 11.0 * 32.0)),
-        );
-        let texture_atlas_layout = texture_atlas_layouts.add(layout);
-        let animation_indices = AnimationIndices { first: 0, last: 5 };
-        let bundle = Model {
-            animation: AnimationBundle {
-                indices: animation_indices.clone(),
-                timer: AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
-            },
-            spritesheet: SpriteSheetBundle {
-                texture: idle_set,
-                atlas: TextureAtlas {
-                    layout: texture_atlas_layout,
-                    index: animation_indices.first,
-                },
-                sprite: Sprite {
-                    flip_x: true,
-                    ..Default::default()
-                },
-                transform: Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
-                ..Default::default()
-            },
-            collider: ColliderChild {
-                collider: Collider::capsule_y(10.0, 5.0),
-                ..Default::default()
-            },
-        };
-
-        model_map.insert("enemy3".to_string(), bundle);
+    let enemy_file = File::open("assets/enemies.yaml");
+    match enemy_file {
+        Ok(f) => {
+            let enemies: CharacterProperties = serde_yaml::from_reader(f).unwrap();
+            for enemy in enemies.characters {
+                model_map.insert(
+                    enemy.name.clone(),
+                    enemy.get_model(&asset_server, &mut texture_atlas_layouts),
+                );
+            }
+        }
+        Err(e) => error!("Failed to load enemies! {}", e),
     }
 
     commands.insert_resource(Models { models: model_map });

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Bundle, Clone)]
 pub struct RigidBodyBundle {

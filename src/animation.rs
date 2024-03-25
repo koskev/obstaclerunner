@@ -1,10 +1,11 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
+use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
 
 use crate::physics::ColliderChild;
 
-#[derive(Component, Default, Clone)]
+#[derive(Component, Default, Clone, Serialize, Deserialize)]
 pub struct AnimationIndices {
     pub first: usize,
     pub last: usize,
@@ -23,7 +24,7 @@ pub struct AnimationBundle {
 pub struct Model {
     pub spritesheet: SpriteSheetBundle,
     pub animation: AnimationBundle,
-    pub collider: ColliderChild,
+    pub colliders: Vec<ColliderChild>,
 }
 
 impl Model {
@@ -32,7 +33,9 @@ impl Model {
             .insert(self.spritesheet.clone())
             .insert(self.animation.clone())
             .with_children(|parent| {
-                parent.spawn(self.collider.clone());
+                for collider in &self.colliders {
+                    parent.spawn(collider.clone());
+                }
             });
     }
 }

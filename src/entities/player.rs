@@ -97,14 +97,14 @@ fn setup_player(
             transform: Transform::from_translation(Vec3::new(0.0, 15.0, 0.0)),
             ..Default::default()
         },
-        collider: ColliderChild {
+        colliders: vec![ColliderChild {
             collider: Collider::capsule_y(3.5, 5.0),
             transform: TransformBundle {
                 local: Transform::from_translation(Vec3::new(0.0, -8.0, 0.0)),
                 ..Default::default()
             },
             ..Default::default()
-        },
+        }],
     };
 
     // spawn player
