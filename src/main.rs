@@ -12,7 +12,7 @@ use bevy_rapier2d::{
 };
 use entities::{
     character::{CharacterProperties, CharacterProperty},
-    enemy::{self, Enemy},
+    enemy::{self, Enemy, EnemyPlugin},
     player::{Player, PlayerBundle, PlayerCameraBundle, PlayerPlugin},
 };
 use input::PlayerAction;
@@ -39,9 +39,9 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(PlayerPlugin)
+        .add_plugins(EnemyPlugin)
         .add_systems(Startup, setup)
         .add_systems(Startup, setup_world)
-        .add_systems(Startup, setup_large_enemy)
         .add_systems(Update, update_world)
         .add_systems(Update, animate_sprites)
         .add_systems(Update, collision)
@@ -130,30 +130,6 @@ fn setup_world(mut commands: Commands) {
         .insert(Sensor)
         .insert(Despawner::default())
         .insert(ActiveEvents::COLLISION_EVENTS);
-}
-
-fn setup_large_enemy(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-) {
-    let mut model_map = HashMap::new();
-
-    let enemy_file = File::open("assets/enemies.yaml");
-    match enemy_file {
-        Ok(f) => {
-            let enemies: CharacterProperties = serde_yaml::from_reader(f).unwrap();
-            for enemy in enemies.characters {
-                model_map.insert(
-                    enemy.name.clone(),
-                    enemy.get_model(&asset_server, &mut texture_atlas_layouts),
-                );
-            }
-        }
-        Err(e) => error!("Failed to load enemies! {}", e),
-    }
-
-    commands.insert_resource(Models { models: model_map });
 }
 
 fn collision(
