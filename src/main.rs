@@ -10,6 +10,10 @@ use bevy_rapier2d::{
     plugin::{NoUserData, RapierConfiguration, RapierPhysicsPlugin},
     render::RapierDebugRenderPlugin,
 };
+use entities::{
+    enemy::Enemy,
+    player::{Player, PlayerBundle, PlayerCameraBundle},
+};
 use input::PlayerAction;
 use leafwing_input_manager::{
     action_state::ActionState, input_map::InputMap, plugin::InputManagerPlugin, InputManagerBundle,
@@ -19,7 +23,10 @@ use rand::Rng;
 
 use std::{collections::HashMap, time::Duration};
 
+use crate::entities::enemy::EnemyBundle;
+
 mod animation;
+mod entities;
 mod input;
 mod physics;
 
@@ -33,7 +40,7 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(Startup, setup_player)
         .add_systems(Startup, setup_world)
-        .add_systems(Startup, setup_large_obstacle)
+        .add_systems(Startup, setup_large_enemy)
         .add_systems(Update, (player_duck, player_jump, on_death))
         .add_systems(Update, update_world)
         .add_systems(Update, animate_sprites)
@@ -46,16 +53,7 @@ fn main() {
 }
 
 #[derive(Component, Default)]
-pub struct Player;
-
-#[derive(Component, Default)]
 pub struct Despawner;
-
-#[derive(Component, Default)]
-pub struct Character;
-
-#[derive(Component, Default)]
-pub struct Obstacle;
 
 #[derive(Component, Default, Hash, PartialEq, Eq, Debug)]
 pub enum CharacterAnimationState {
@@ -65,66 +63,12 @@ pub enum CharacterAnimationState {
     Ducking,
 }
 
-#[derive(Bundle, Default)]
-pub struct ObstacleBundle {
-    pub obstacle: Obstacle,
-    pub controller: ControllerBundle,
-}
-
-#[derive(Bundle, Default)]
-pub struct CharacterBundle {
-    pub animation_state: CharacterAnimationState,
-
-    pub controller: ControllerBundle,
-
-    pub character: Character,
-}
-
-#[derive(Component, Default)]
-pub struct PlayerCamera;
-
-#[derive(Bundle, Default)]
-pub struct PlayerCameraBundle {
-    player_camera: PlayerCamera,
-    camera: Camera2dBundle,
-}
-
-#[derive(Bundle)]
-pub struct PlayerBundle {
-    pub character: CharacterBundle,
-
-    pub player: Player,
-
-    pub input: InputManagerBundle<PlayerAction>,
-    pub locked_axes: LockedAxes,
-}
-
-impl Default for PlayerBundle {
-    fn default() -> Self {
-        let mut input_map = InputMap::default();
-        input_map.insert(PlayerAction::Jump, KeyCode::Space);
-        input_map.insert(PlayerAction::Duck, KeyCode::ArrowDown);
-
-        Self {
-            character: CharacterBundle {
-                controller: ControllerBundle {
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            player: Player::default(),
-            input: InputManagerBundle::with_map(input_map),
-            locked_axes: LockedAxes::ROTATION_LOCKED | LockedAxes::TRANSLATION_LOCKED_X,
-        }
-    }
-}
-
-fn spawn_obstacle(mut commands: Commands, model: Model) {
-    info!("Spawning obstacle");
-    let obstacle = ObstacleBundle {
+fn spawn_enemy(mut commands: Commands, model: Model) {
+    info!("Spawning enemy");
+    let enemy = EnemyBundle {
         ..Default::default()
     };
-    let mut entity_commands = commands.spawn(obstacle);
+    let mut entity_commands = commands.spawn(enemy);
     entity_commands.insert(LockedAxes::ROTATION_LOCKED);
     model.spawn(entity_commands);
 }
@@ -133,7 +77,7 @@ fn update_world(
     commands: Commands,
     time: Res<Time>,
     mut last_update: Local<Duration>,
-    mut q_obstacale: Query<&mut Transform, With<Obstacle>>,
+    mut q_obstacale: Query<&mut Transform, With<Enemy>>,
     models: Res<Models>,
 ) {
     // Scroll world
@@ -142,13 +86,13 @@ fn update_world(
     }
 
     let next_spawn_ms = rand::thread_rng().gen_range(800..1500);
-    // Generate new obstacles
+    // Generate new enemys
     if time.elapsed() - *last_update > Duration::from_millis(next_spawn_ms) {
         *last_update = time.elapsed();
         // spawn new
         let mut model = models.models.get("enemy1").unwrap().clone();
         model.spritesheet.transform.translation.x = 200.0;
-        spawn_obstacle(commands, model);
+        spawn_enemy(commands, model);
     }
 }
 
@@ -183,7 +127,7 @@ fn setup_world(mut commands: Commands) {
         .insert(ActiveEvents::COLLISION_EVENTS);
 }
 
-fn setup_large_obstacle(
+fn setup_large_enemy(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
@@ -293,22 +237,22 @@ fn collision(
     mut commands: Commands,
     mut er_collision: EventReader<CollisionEvent>,
     q_despawner: Query<Entity, With<Despawner>>,
-    q_obstacle: Query<Entity, With<Obstacle>>,
+    q_enemy: Query<Entity, With<Enemy>>,
     q_collider_children: Query<&Parent, With<Collider>>,
 ) {
     for event in er_collision.read() {
         match event {
             CollisionEvent::Started(ent1, ent2, _flags) => {
-                let (_despawner, obstacle_collider) = if q_despawner.contains(*ent1) {
+                let (_despawner, enemy_collider) = if q_despawner.contains(*ent1) {
                     (*ent1, *ent2)
                 } else if q_despawner.contains(*ent2) {
                     (*ent2, *ent1)
                 } else {
                     continue;
                 };
-                if let Ok(parent) = q_collider_children.get(obstacle_collider) {
-                    if let Ok(obstacle) = q_obstacle.get(parent.get()) {
-                        commands.entity(obstacle).despawn_recursive();
+                if let Ok(parent) = q_collider_children.get(enemy_collider) {
+                    if let Ok(enemy) = q_enemy.get(parent.get()) {
+                        commands.entity(enemy).despawn_recursive();
                     }
                 }
             }
