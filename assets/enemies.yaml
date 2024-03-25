@@ -1,0 +1,70 @@
+characters:
+  - name: enemy1
+    file_path: tiles/dungeon.png
+    flip_x: true
+    tile_size:
+      - 32.0
+      - 32.0
+    columns: 8
+    rows: 1
+    offset_fixed:
+      - 16.0
+      - 16.0
+    offset_tiles:
+      - 0.0
+      - 10.0
+    animation_indices:
+      first: 0
+      last: 5
+    animation_speed: 0.1
+    colliders:
+      - collider:
+          type: capsule_y
+          height: 10.0
+          radius: 5.0
+  - name: enemy2
+    file_path: tiles/dungeon.png
+    flip_x: true
+    tile_size:
+      - 32.0
+      - 32.0
+    columns: 8
+    rows: 1
+    offset_fixed:
+      - 16.0
+      - 16.0
+    offset_tiles:
+      - 0.0
+      - 13.0
+    animation_indices:
+      first: 0
+      last: 5
+    animation_speed: 0.1
+    colliders:
+      - collider:
+          type: capsule_y
+          height: 10.0
+          radius: 5.0
+  - name: enemy3
+    file_path: tiles/dungeon.png
+    flip_x: true
+    tile_size:
+      - 32.0
+      - 64.0
+    columns: 8
+    rows: 1
+    offset_fixed:
+      - 16.0
+      - 48.0
+    offset_tiles:
+      - 0.0
+      - 5.0
+    animation_indices:
+      first: 0
+      last: 5
+    animation_speed: 0.1
+    colliders:
+      - collider:
+          type: capsule_y
+          height: 10.0
+          radius: 5.0

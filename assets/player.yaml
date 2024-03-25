@@ -1,0 +1,22 @@
+name: player
+file_path: tiles/dungeon.png
+tile_size:
+  - 16.0
+  - 32.0
+columns: 9
+rows: 1
+offset_tiles:
+  - 8.0
+  - 0.0
+animation_indices:
+  first: 0
+  last: 6
+animation_speed: 0.1
+colliders:
+  - collider:
+      type: capsule_y
+      height: 3.5
+      radius: 5.0
+    translation:
+      - 0.0
+      - -8.0
