@@ -1,9 +1,13 @@
 use animation::{
     animate_sprites, AnimationBundle, AnimationIndices, AnimationTimer, Model, Models,
 };
-use bevy::{prelude::*, reflect::serde, window::PrimaryWindow};
+use bevy::{prelude::*, render::view::RenderLayers, window::PrimaryWindow};
 use bevy_common_assets::yaml::YamlAssetPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_parallax::{
+    CreateParallaxEvent, LayerData, LayerRepeat, LayerSpeed, ParallaxCameraComponent,
+    ParallaxMoveEvent, ParallaxPlugin, RepeatStrategy,
+};
 use bevy_rapier2d::{
     dynamics::{LockedAxes, RigidBody, Velocity},
     geometry::{ActiveEvents, Collider, CollisionGroups, Sensor},
@@ -23,7 +27,7 @@ use leafwing_input_manager::{
 use physics::{ColliderChild, CollisionGroup, ControllerBundle, RigidBodyBundle};
 use rand::{seq::IteratorRandom, Rng};
 
-use std::{collections::HashMap, fs::File, time::Duration};
+use std::{collections::HashMap, fs::File, time::Duration, vec::Vec};
 
 use crate::entities::enemy::EnemyBundle;
 
@@ -47,7 +51,8 @@ fn main() {
         ]))
         .add_plugins(YamlAssetPlugin::<CharacterProperty>::new(&[
             "character.yaml",
-        ]));
+        ]))
+        .add_plugins(ParallaxPlugin);
 
     app.add_systems(Startup, setup)
         .add_systems(Startup, setup_world)
@@ -83,7 +88,14 @@ fn update_world(
     mut last_update: Local<Duration>,
     mut q_obstacale: Query<&mut Transform, With<Enemy>>,
     models: Res<Models>,
+    mut ew_parallax: EventWriter<ParallaxMoveEvent>,
+    q_camera: Query<Entity, With<ParallaxCameraComponent>>,
 ) {
+    let camera = q_camera.get_single().unwrap();
+    ew_parallax.send(ParallaxMoveEvent {
+        camera,
+        camera_move_speed: Vec2::new(1.0, 0.0) * time.delta_seconds() * 100.0,
+    });
     // Scroll world
     for mut transform in &mut q_obstacale {
         transform.translation.x -= 100.0 * time.delta_seconds();
@@ -102,12 +114,53 @@ fn update_world(
     }
 }
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, mut ew_create_parallax: EventWriter<CreateParallaxEvent>) {
     // spawn camera
     let mut camera_bundle = PlayerCameraBundle::default();
     camera_bundle.camera.projection.scale = 0.25;
+    camera_bundle.camera.transform.translation.y += 100.0;
 
-    commands.spawn(camera_bundle);
+    commands
+        .spawn(camera_bundle)
+        .insert(Name::new("Player Camera"));
+
+    let mut parallax_camera = Camera2dBundle {
+        camera: Camera {
+            order: -1,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    parallax_camera.projection.scale = 0.3;
+
+    let parallax_entity = commands
+        .spawn(parallax_camera)
+        .insert(ParallaxCameraComponent::new(1))
+        .insert(RenderLayers::layer(1))
+        .insert(Name::new("Parallax Camera"))
+        .id();
+
+    let layer_speeds: Vec<f32> = vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+    let layers: Vec<LayerData> = layer_speeds
+        .iter()
+        .enumerate()
+        .map(|(idx, speed)| LayerData {
+            speed: LayerSpeed::Horizontal(*speed),
+            path: format!("tiles/river/layer{}.png", idx),
+            tile_size: Vec2::new(640.0, 360.0),
+            repeat: LayerRepeat::horizontally(RepeatStrategy::Same),
+            rows: 1,
+            cols: 1,
+            z: layer_speeds.len() as f32 - idx as f32,
+            scale: Vec2::splat(1.0),
+            ..Default::default()
+        })
+        .collect();
+
+    ew_create_parallax.send(CreateParallaxEvent {
+        camera: parallax_entity,
+        layers_data: layers,
+    });
 }
 
 fn setup_world(mut commands: Commands) {
