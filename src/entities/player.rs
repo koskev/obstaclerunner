@@ -58,6 +58,22 @@ impl Default for PlayerBundle {
     }
 }
 
+fn pause_game(
+    mut commands: Commands,
+    q_player: Query<&ActionState<PlayerAction>, With<Player>>,
+    game_state: Res<State<GameState>>,
+) {
+    for input_action in &q_player {
+        if input_action.just_pressed(&PlayerAction::Pause) {
+            let next_state = match game_state.get() {
+                GameState::Running => GameState::Paused,
+                GameState::Paused => GameState::Running,
+            };
+            commands.insert_resource(NextState(Some(next_state)));
+        }
+    }
+}
+
 fn toggle_debug(
     q_player: Query<&ActionState<PlayerAction>, With<Player>>,
     mut debug: ResMut<DebugRenderContext>,
@@ -146,6 +162,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, load_assets)
             .add_systems(Update, setup_player)
+            .add_systems(Update, pause_game)
             .add_systems(
                 Update,
                 (

@@ -37,7 +37,7 @@ mod input;
 mod physics;
 
 #[derive(States, Default, Debug, PartialEq, Eq, Hash, Clone)]
-enum AppState {
+pub enum AppState {
     MainMenu,
     #[default]
     Game,
@@ -45,7 +45,7 @@ enum AppState {
 }
 
 #[derive(States, Default, Debug, PartialEq, Eq, Hash, Clone)]
-enum GameState {
+pub enum GameState {
     #[default]
     Running,
     Paused,
@@ -73,17 +73,29 @@ fn main() {
 
     app.add_systems(Startup, setup)
         .add_systems(Startup, setup_world)
-        .add_systems(Update, update_world)
-        .add_systems(Update, animate_sprites)
-        .add_systems(Update, collision)
+        .add_systems(
+            Update,
+            (update_world, animate_sprites, collision).run_if(in_state(GameState::Running)),
+        )
         .insert_resource(RapierConfiguration {
             gravity: Vec2::new(0.0, -800.0),
             ..Default::default()
         });
 
+    app.add_systems(OnEnter(GameState::Paused), pause_physics);
+    app.add_systems(OnEnter(GameState::Running), resume_physics);
+
     app.init_resource::<Models>();
 
     app.run();
+}
+
+fn resume_physics(mut rapier_config: ResMut<RapierConfiguration>) {
+    rapier_config.physics_pipeline_active = true;
+}
+
+fn pause_physics(mut rapier_config: ResMut<RapierConfiguration>) {
+    rapier_config.physics_pipeline_active = false;
 }
 
 #[derive(Component, Default)]
