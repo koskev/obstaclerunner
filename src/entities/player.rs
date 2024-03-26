@@ -7,6 +7,7 @@ use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, Inp
 use crate::{
     input::PlayerAction,
     physics::{CollisionGroup, ControllerBundle},
+    GameState,
 };
 
 use super::character::{CharacterBundle, CharacterProperty};
@@ -40,6 +41,8 @@ impl Default for PlayerBundle {
         let mut input_map = InputMap::default();
         input_map.insert(PlayerAction::Jump, KeyCode::Space);
         input_map.insert(PlayerAction::Duck, KeyCode::ArrowDown);
+        input_map.insert(PlayerAction::DebugRenderer, KeyCode::F1);
+        input_map.insert(PlayerAction::Pause, KeyCode::Escape);
 
         Self {
             character: CharacterBundle {
@@ -54,6 +57,20 @@ impl Default for PlayerBundle {
         }
     }
 }
+
+fn toggle_debug(
+    q_player: Query<&ActionState<PlayerAction>, With<Player>>,
+    mut debug: ResMut<DebugRenderContext>,
+) {
+    for input_action in &q_player {
+        if input_action.just_pressed(&PlayerAction::DebugRenderer) {
+            debug.enabled = !debug.enabled;
+            // Prevent toggling multiple times
+            break;
+        }
+    }
+}
+
 fn player_jump(
     mut q_player: Query<(&mut Velocity, &ActionState<PlayerAction>, &Player), With<Player>>,
 ) {
@@ -129,10 +146,17 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, load_assets)
             .add_systems(Update, setup_player)
-            .add_systems(Update, player_jump)
-            .add_systems(Update, player_duck)
-            .add_systems(Update, player_death)
-            .add_systems(Update, ground_check)
+            .add_systems(
+                Update,
+                (
+                    player_jump,
+                    player_duck,
+                    player_death,
+                    ground_check,
+                    toggle_debug,
+                )
+                    .run_if(in_state(GameState::Running)),
+            )
             .init_resource::<PlayerHandle>();
     }
 }

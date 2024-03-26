@@ -36,8 +36,25 @@ mod entities;
 mod input;
 mod physics;
 
+#[derive(States, Default, Debug, PartialEq, Eq, Hash, Clone)]
+enum AppState {
+    MainMenu,
+    #[default]
+    Game,
+    GameOver,
+}
+
+#[derive(States, Default, Debug, PartialEq, Eq, Hash, Clone)]
+enum GameState {
+    #[default]
+    Running,
+    Paused,
+}
+
 fn main() {
     let mut app = App::new();
+
+    app.init_state::<GameState>().init_state::<AppState>();
 
     app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(WorldInspectorPlugin::new())
