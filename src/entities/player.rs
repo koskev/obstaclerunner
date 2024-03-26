@@ -97,23 +97,29 @@ fn player_duck() {}
 
 fn player_death() {}
 
+#[derive(Resource, Default)]
+pub struct PlayerHandle(Handle<CharacterProperty>);
+
+fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let player: Handle<CharacterProperty> = asset_server.load("player.yaml");
+
+    commands.insert_resource(PlayerHandle(player));
+}
+
 fn setup_player(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    asset_server: Res<AssetServer>,
+    mut player_assets: ResMut<Assets<CharacterProperty>>,
+    player_handle: Res<PlayerHandle>,
 ) {
-    let player_file = File::open("assets/player.yaml");
-    match player_file {
-        Ok(f) => {
-            let player: CharacterProperty = serde_yaml::from_reader(f).unwrap();
-            let model = player.get_model(&asset_server, &mut texture_atlas_layouts);
-            // spawn player
-            let player_bundle = PlayerBundle::default();
+    if let Some(player) = player_assets.remove(player_handle.0.id()) {
+        let model = player.get_model(&asset_server, &mut texture_atlas_layouts);
+        // spawn player
+        let player_bundle = PlayerBundle::default();
 
-            let entity_commands = commands.spawn(player_bundle);
-            model.spawn(entity_commands);
-        }
-        Err(e) => error!("Failed to load player! {}", e),
+        let entity_commands = commands.spawn(player_bundle);
+        model.spawn(entity_commands);
     }
 }
 
@@ -121,10 +127,12 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_player)
+        app.add_systems(Startup, load_assets)
+            .add_systems(Update, setup_player)
             .add_systems(Update, player_jump)
             .add_systems(Update, player_duck)
             .add_systems(Update, player_death)
-            .add_systems(Update, ground_check);
+            .add_systems(Update, ground_check)
+            .init_resource::<PlayerHandle>();
     }
 }

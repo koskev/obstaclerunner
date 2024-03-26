@@ -17,34 +17,41 @@ pub struct EnemyBundle {
     pub controller: ControllerBundle,
 }
 
+#[derive(Resource, Default)]
+pub struct EnemyHandle(Handle<CharacterProperties>);
+
+fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let enemies: Handle<CharacterProperties> = asset_server.load("enemies.yaml");
+
+    commands.insert_resource(EnemyHandle(enemies));
+}
+
 fn setup_enemies(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    asset_server: Res<AssetServer>,
+    mut enemy_assets: ResMut<Assets<CharacterProperties>>,
+    enemy_handle: Res<EnemyHandle>,
 ) {
     let mut model_map = HashMap::new();
-
-    let enemy_file = File::open("assets/enemies.yaml");
-    match enemy_file {
-        Ok(f) => {
-            let enemies: CharacterProperties = serde_yaml::from_reader(f).unwrap();
-            for enemy in enemies.characters {
-                model_map.insert(
-                    enemy.name.clone(),
-                    enemy.get_model(&asset_server, &mut texture_atlas_layouts),
-                );
-            }
+    if let Some(enemies) = enemy_assets.remove(enemy_handle.0.id()) {
+        info!("Setting up enemies!");
+        for enemy in &enemies.characters {
+            model_map.insert(
+                enemy.name.clone(),
+                enemy.get_model(&asset_server, &mut texture_atlas_layouts),
+            );
         }
-        Err(e) => error!("Failed to load enemies! {}", e),
+        commands.insert_resource(Models { models: model_map });
     }
-
-    commands.insert_resource(Models { models: model_map });
 }
 
 pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_enemies);
+        app.add_systems(Startup, load_assets)
+            .add_systems(Update, setup_enemies)
+            .init_resource::<EnemyHandle>();
     }
 }

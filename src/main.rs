@@ -2,6 +2,7 @@ use animation::{
     animate_sprites, AnimationBundle, AnimationIndices, AnimationTimer, Model, Models,
 };
 use bevy::{prelude::*, reflect::serde, window::PrimaryWindow};
+use bevy_common_assets::yaml::YamlAssetPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier2d::{
     dynamics::{LockedAxes, RigidBody, Velocity},
@@ -32,15 +33,23 @@ mod input;
 mod physics;
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+    let mut app = App::new();
+
+    app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(InputManagerPlugin::<PlayerAction>::default())
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(PlayerPlugin)
         .add_plugins(EnemyPlugin)
-        .add_systems(Startup, setup)
+        .add_plugins(YamlAssetPlugin::<CharacterProperties>::new(&[
+            "characters.yaml",
+        ]))
+        .add_plugins(YamlAssetPlugin::<CharacterProperty>::new(&[
+            "character.yaml",
+        ]));
+
+    app.add_systems(Startup, setup)
         .add_systems(Startup, setup_world)
         .add_systems(Update, update_world)
         .add_systems(Update, animate_sprites)
@@ -48,8 +57,11 @@ fn main() {
         .insert_resource(RapierConfiguration {
             gravity: Vec2::new(0.0, -800.0),
             ..Default::default()
-        })
-        .run();
+        });
+
+    app.init_resource::<Models>();
+
+    app.run();
 }
 
 #[derive(Component, Default)]
@@ -82,14 +94,11 @@ fn update_world(
     if time.elapsed() - *last_update > Duration::from_millis(next_spawn_ms) {
         *last_update = time.elapsed();
         // spawn new
-        let model_key = models
-            .models
-            .keys()
-            .choose(&mut rand::thread_rng())
-            .unwrap();
-        let mut model = models.models.get(model_key).unwrap().clone();
-        model.spritesheet.transform.translation.x = 200.0;
-        spawn_enemy(commands, model);
+        if let Some(model_key) = models.models.keys().choose(&mut rand::thread_rng()) {
+            let mut model = models.models.get(model_key).unwrap().clone();
+            model.spritesheet.transform.translation.x = 200.0;
+            spawn_enemy(commands, model);
+        }
     }
 }
 
