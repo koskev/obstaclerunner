@@ -26,6 +26,7 @@ use leafwing_input_manager::{
 };
 use physics::{ColliderChild, CollisionGroup, ControllerBundle, RigidBodyBundle};
 use rand::{seq::IteratorRandom, Rng};
+use ui::GameUiPlugin;
 
 use std::{collections::HashMap, fs::File, time::Duration, vec::Vec};
 
@@ -35,21 +36,25 @@ mod animation;
 mod entities;
 mod input;
 mod physics;
+mod ui;
 
 #[derive(States, Default, Debug, PartialEq, Eq, Hash, Clone)]
 pub enum AppState {
-    MainMenu,
     #[default]
+    MainMenu,
     Game,
     GameOver,
 }
 
 #[derive(States, Default, Debug, PartialEq, Eq, Hash, Clone)]
 pub enum GameState {
-    #[default]
     Running,
+    #[default]
     Paused,
 }
+
+#[derive(Event, Default)]
+pub struct ResetGameEvent;
 
 fn main() {
     let mut app = App::new();
@@ -63,6 +68,7 @@ fn main() {
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(PlayerPlugin)
         .add_plugins(EnemyPlugin)
+        .add_plugins(GameUiPlugin)
         .add_plugins(YamlAssetPlugin::<CharacterProperties>::new(&[
             "characters.yaml",
         ]))
@@ -71,8 +77,7 @@ fn main() {
         ]))
         .add_plugins(ParallaxPlugin);
 
-    app.add_systems(Startup, setup)
-        .add_systems(Startup, setup_world)
+    app.add_systems(Startup, (setup_camera, setup_background))
         .add_systems(
             Update,
             (update_world, animate_sprites, collision).run_if(in_state(GameState::Running)),
@@ -84,10 +89,25 @@ fn main() {
 
     app.add_systems(OnEnter(GameState::Paused), pause_time);
     app.add_systems(OnEnter(GameState::Running), resume_time);
+    app.add_systems(OnEnter(AppState::GameOver), handle_gameover);
+    app.add_systems(OnEnter(AppState::Game), (handle_game_start, setup_world));
+
+    app.add_event::<ResetGameEvent>();
 
     app.init_resource::<Models>();
 
     app.run();
+}
+
+fn handle_game_start(mut commands: Commands, mut ew_reset: EventWriter<ResetGameEvent>) {
+    // Cleanup old stuff
+    ew_reset.send_default();
+    commands.insert_resource(NextState(Some(GameState::Running)));
+}
+
+fn handle_gameover(mut commands: Commands) {
+    commands.insert_resource(NextState(Some(GameState::Paused)));
+    // Display UI with score etc.
 }
 
 fn resume_time(mut time: ResMut<Time<Virtual>>) {
@@ -101,24 +121,9 @@ fn pause_time(mut time: ResMut<Time<Virtual>>) {
 #[derive(Component, Default)]
 pub struct Despawner;
 
-fn spawn_enemy(mut commands: Commands, model: Model) {
-    info!("Spawning enemy");
-    let enemy = EnemyBundle {
-        ..Default::default()
-    };
-    let mut entity_commands = commands.spawn(enemy);
-    entity_commands
-        .insert(LockedAxes::ROTATION_LOCKED)
-        .insert(ActiveEvents::COLLISION_EVENTS);
-    model.spawn(entity_commands);
-}
-
 fn update_world(
-    commands: Commands,
     time: Res<Time<Virtual>>,
-    mut last_update: Local<Duration>,
     mut q_obstacale: Query<&mut Transform, With<Enemy>>,
-    models: Res<Models>,
     mut ew_parallax: EventWriter<ParallaxMoveEvent>,
     q_camera: Query<Entity, With<ParallaxCameraComponent>>,
 ) {
@@ -131,31 +136,12 @@ fn update_world(
     for mut transform in &mut q_obstacale {
         transform.translation.x -= 100.0 * time.delta_seconds();
     }
-
-    let next_spawn_ms = rand::thread_rng().gen_range(800..1500);
-    // Generate new enemys
-    if time.elapsed() - *last_update > Duration::from_millis(next_spawn_ms) {
-        *last_update = time.elapsed();
-        // spawn new
-        if let Some(model_key) = models.models.keys().choose(&mut rand::thread_rng()) {
-            let mut model = models.models.get(model_key).unwrap().clone();
-            model.spritesheet.transform.translation.x = 500.0;
-            spawn_enemy(commands, model);
-        }
-    }
 }
 
-fn setup(mut commands: Commands, mut ew_create_parallax: EventWriter<CreateParallaxEvent>) {
-    // spawn camera
-    let mut camera_bundle = PlayerCameraBundle::default();
-    camera_bundle.camera.projection.scale = 0.25;
-    camera_bundle.camera.transform.translation.y += 100.0;
-    camera_bundle.camera.transform.translation.x += 200.0;
-
-    commands
-        .spawn(camera_bundle)
-        .insert(Name::new("Player Camera"));
-
+fn setup_background(
+    mut commands: Commands,
+    mut ew_create_parallax: EventWriter<CreateParallaxEvent>,
+) {
     let mut parallax_camera = Camera2dBundle {
         camera: Camera {
             order: -1,
@@ -193,6 +179,18 @@ fn setup(mut commands: Commands, mut ew_create_parallax: EventWriter<CreateParal
         camera: parallax_entity,
         layers_data: layers,
     });
+}
+
+fn setup_camera(mut commands: Commands) {
+    // spawn camera
+    let mut camera_bundle = PlayerCameraBundle::default();
+    camera_bundle.camera.projection.scale = 0.25;
+    camera_bundle.camera.transform.translation.y += 100.0;
+    camera_bundle.camera.transform.translation.x += 200.0;
+
+    commands
+        .spawn(camera_bundle)
+        .insert(Name::new("Player Camera"));
 }
 
 fn setup_world(mut commands: Commands) {

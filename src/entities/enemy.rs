@@ -1,8 +1,14 @@
-use std::fs::File;
+use std::{fs::File, time::Duration};
 
 use bevy::prelude::*;
+use bevy_rapier2d::dynamics::LockedAxes;
+use rand::{seq::IteratorRandom, Rng};
 
-use crate::{animation::Models, physics::ControllerBundle};
+use crate::{
+    animation::{Model, Models},
+    physics::ControllerBundle,
+    AppState, GameState,
+};
 
 use std::collections::HashMap;
 
@@ -46,12 +52,44 @@ fn setup_enemies(
     }
 }
 
+fn spawn_enemy(
+    mut commands: Commands,
+    time: Res<Time<Virtual>>,
+    mut last_update: Local<Duration>,
+    models: Res<Models>,
+) {
+    let next_spawn_ms = rand::thread_rng().gen_range(800..1500);
+    // Generate new enemys
+    if time.elapsed() - *last_update > Duration::from_millis(next_spawn_ms) {
+        *last_update = time.elapsed();
+        // spawn new
+        if let Some(model_key) = models.models.keys().choose(&mut rand::thread_rng()) {
+            let mut model = models.models.get(model_key).unwrap().clone();
+            model.spritesheet.transform.translation.x = 500.0;
+            let enemy = EnemyBundle {
+                ..Default::default()
+            };
+            let mut entity_commands = commands.spawn(enemy);
+            entity_commands.insert(LockedAxes::ROTATION_LOCKED);
+            model.spawn(entity_commands);
+        }
+    }
+}
+
+fn cleanup_enemy(mut commands: Commands, q_enemy: Query<Entity, With<Enemy>>) {
+    for enemy in &q_enemy {
+        commands.entity(enemy).despawn_recursive();
+    }
+}
+
 pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, load_assets)
             .add_systems(Update, setup_enemies)
+            .add_systems(Update, spawn_enemy.run_if(in_state(GameState::Running)))
+            .add_systems(OnEnter(AppState::Game), cleanup_enemy)
             .init_resource::<EnemyHandle>();
     }
 }

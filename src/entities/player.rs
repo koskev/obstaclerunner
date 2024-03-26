@@ -227,7 +227,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, load_assets)
             .add_systems(Update, setup_player)
-            .add_systems(Update, pause_game)
+            .add_systems(Update, pause_game.run_if(in_state(AppState::Game)))
             .add_systems(
                 Update,
                 (
@@ -240,7 +240,8 @@ impl Plugin for PlayerPlugin {
                     handle_hit,
                     handle_death,
                 )
-                    .run_if(in_state(GameState::Running)),
+                    .run_if(in_state(GameState::Running))
+                    .run_if(in_state(AppState::Game)),
             )
             .init_resource::<PlayerHandle>()
             .add_event::<PlayerHitEvent>()
