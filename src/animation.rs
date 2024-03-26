@@ -46,7 +46,7 @@ pub struct Models {
 }
 
 pub fn animate_sprites(
-    time: Res<Time>,
+    time: Res<Time<Virtual>>,
     mut query: Query<(&AnimationIndices, &mut AnimationTimer, &mut TextureAtlas)>,
 ) {
     for (indices, mut timer, mut atlas) in &mut query {

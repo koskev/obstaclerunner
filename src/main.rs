@@ -82,20 +82,20 @@ fn main() {
             ..Default::default()
         });
 
-    app.add_systems(OnEnter(GameState::Paused), pause_physics);
-    app.add_systems(OnEnter(GameState::Running), resume_physics);
+    app.add_systems(OnEnter(GameState::Paused), pause_time);
+    app.add_systems(OnEnter(GameState::Running), resume_time);
 
     app.init_resource::<Models>();
 
     app.run();
 }
 
-fn resume_physics(mut rapier_config: ResMut<RapierConfiguration>) {
-    rapier_config.physics_pipeline_active = true;
+fn resume_time(mut time: ResMut<Time<Virtual>>) {
+    time.unpause();
 }
 
-fn pause_physics(mut rapier_config: ResMut<RapierConfiguration>) {
-    rapier_config.physics_pipeline_active = false;
+fn pause_time(mut time: ResMut<Time<Virtual>>) {
+    time.pause();
 }
 
 #[derive(Component, Default)]
@@ -113,7 +113,7 @@ fn spawn_enemy(mut commands: Commands, model: Model) {
 
 fn update_world(
     commands: Commands,
-    time: Res<Time>,
+    time: Res<Time<Virtual>>,
     mut last_update: Local<Duration>,
     mut q_obstacale: Query<&mut Transform, With<Enemy>>,
     models: Res<Models>,
