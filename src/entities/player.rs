@@ -7,10 +7,13 @@ use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, Inp
 use crate::{
     input::PlayerAction,
     physics::{CollisionGroup, ControllerBundle},
-    GameState,
+    AppState, GameState,
 };
 
-use super::character::{CharacterBundle, CharacterProperty};
+use super::{
+    character::{CharacterBundle, CharacterProperty},
+    enemy::Enemy,
+};
 
 #[derive(Component, Default)]
 pub struct Player {
@@ -34,6 +37,17 @@ pub struct PlayerBundle {
 
     pub input: InputManagerBundle<PlayerAction>,
     pub locked_axes: LockedAxes,
+}
+
+#[derive(Event)]
+struct PlayerHitEvent {
+    pub player: Entity,
+    pub enemy: Entity,
+}
+
+#[derive(Event)]
+struct PlayerDeathEvent {
+    pub player: Entity,
 }
 
 impl Default for PlayerBundle {
@@ -156,6 +170,57 @@ fn setup_player(
     }
 }
 
+fn handle_hit(
+    mut er_hit: EventReader<PlayerHitEvent>,
+    mut ew_death: EventWriter<PlayerDeathEvent>,
+) {
+    for event in er_hit.read() {
+        ew_death.send(PlayerDeathEvent {
+            player: event.player,
+        });
+    }
+}
+
+fn handle_death(mut er_death: EventReader<PlayerDeathEvent>, mut commands: Commands) {
+    for _event in er_death.read() {
+        commands.insert_resource(NextState(Some(AppState::GameOver)));
+    }
+}
+
+fn collision(
+    mut er_collision: EventReader<CollisionEvent>,
+    q_enemy: Query<Entity, With<Enemy>>,
+    q_player: Query<Entity, With<Player>>,
+    q_parents: Query<&Parent>,
+    mut ew_hit: EventWriter<PlayerHitEvent>,
+) {
+    for event in er_collision.read() {
+        match event {
+            CollisionEvent::Started(ent1, ent2, _flags) => {
+                if let (Ok(ent1_parent), Ok(ent2_parent)) =
+                    (q_parents.get(*ent1), q_parents.get(*ent2))
+                {
+                    let (player, other) = if q_player.contains(ent1_parent.get()) {
+                        (ent1_parent.get(), ent2_parent.get())
+                    } else if q_player.contains(*ent2) {
+                        (ent2_parent.get(), ent1_parent.get())
+                    } else {
+                        continue;
+                    };
+                    // we got a player collision with some other
+
+                    // Hit with enemy -> send event
+                    if let Ok(enemy) = q_enemy.get(other) {
+                        ew_hit.send(PlayerHitEvent { player, enemy });
+                        info!("player with enemy collision! {:?} {:?}", player, enemy);
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+}
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -171,9 +236,14 @@ impl Plugin for PlayerPlugin {
                     player_death,
                     ground_check,
                     toggle_debug,
+                    collision,
+                    handle_hit,
+                    handle_death,
                 )
                     .run_if(in_state(GameState::Running)),
             )
-            .init_resource::<PlayerHandle>();
+            .init_resource::<PlayerHandle>()
+            .add_event::<PlayerHitEvent>()
+            .add_event::<PlayerDeathEvent>();
     }
 }

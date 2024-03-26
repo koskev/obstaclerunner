@@ -10,7 +10,7 @@ use bevy_parallax::{
 };
 use bevy_rapier2d::{
     dynamics::{LockedAxes, RigidBody, Velocity},
-    geometry::{ActiveEvents, Collider, CollisionGroups, Sensor},
+    geometry::{ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor},
     pipeline::CollisionEvent,
     plugin::{NoUserData, RapierConfiguration, RapierPhysicsPlugin},
     render::RapierDebugRenderPlugin,
@@ -107,7 +107,9 @@ fn spawn_enemy(mut commands: Commands, model: Model) {
         ..Default::default()
     };
     let mut entity_commands = commands.spawn(enemy);
-    entity_commands.insert(LockedAxes::ROTATION_LOCKED);
+    entity_commands
+        .insert(LockedAxes::ROTATION_LOCKED)
+        .insert(ActiveEvents::COLLISION_EVENTS);
     model.spawn(entity_commands);
 }
 

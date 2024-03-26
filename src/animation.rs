@@ -1,4 +1,5 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy_rapier2d::geometry::ActiveEvents;
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
@@ -34,7 +35,9 @@ impl Model {
             .insert(self.animation.clone())
             .with_children(|parent| {
                 for collider in &self.colliders {
-                    parent.spawn(collider.clone());
+                    parent
+                        .spawn(collider.clone())
+                        .insert(ActiveEvents::COLLISION_EVENTS);
                 }
             });
     }
