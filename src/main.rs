@@ -108,7 +108,7 @@ fn update_world(
         // spawn new
         if let Some(model_key) = models.models.keys().choose(&mut rand::thread_rng()) {
             let mut model = models.models.get(model_key).unwrap().clone();
-            model.spritesheet.transform.translation.x = 200.0;
+            model.spritesheet.transform.translation.x = 500.0;
             spawn_enemy(commands, model);
         }
     }
@@ -119,6 +119,7 @@ fn setup(mut commands: Commands, mut ew_create_parallax: EventWriter<CreateParal
     let mut camera_bundle = PlayerCameraBundle::default();
     camera_bundle.camera.projection.scale = 0.25;
     camera_bundle.camera.transform.translation.y += 100.0;
+    camera_bundle.camera.transform.translation.x += 200.0;
 
     commands
         .spawn(camera_bundle)
@@ -140,7 +141,7 @@ fn setup(mut commands: Commands, mut ew_create_parallax: EventWriter<CreateParal
         .insert(Name::new("Parallax Camera"))
         .id();
 
-    let layer_speeds: Vec<f32> = vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+    let layer_speeds: Vec<f32> = vec![0.1, 0.6, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
     let layers: Vec<LayerData> = layer_speeds
         .iter()
         .enumerate()
@@ -182,7 +183,7 @@ fn setup_world(mut commands: Commands) {
     commands
         .spawn(Collider::cuboid(100.0, 100.0))
         .insert(TransformBundle {
-            local: Transform::from_translation(Vec3::new(-200.0, 0.0, 0.0)),
+            local: Transform::from_translation(Vec3::new(-500.0, 0.0, 0.0)),
             ..Default::default()
         })
         .insert(Sensor)
