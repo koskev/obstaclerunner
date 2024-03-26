@@ -50,15 +50,15 @@ characters:
     flip_x: true
     tile_size:
       - 32.0
-      - 64.0
+      - 48.0
     columns: 8
     rows: 1
     offset_fixed:
       - 16.0
-      - 48.0
+      - -8.0
     offset_tiles:
       - 0.0
-      - 5.0
+      - 8.0
     animation_indices:
       first: 0
       last: 5
