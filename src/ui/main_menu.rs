@@ -3,12 +3,32 @@ use bevy::prelude::*;
 use crate::{handle_gameover, AppState};
 
 #[derive(Component)]
-struct MainMenuMarker;
+pub struct MainMenuMarker;
 
 #[derive(Component)]
-struct StartGameButton;
+pub struct StartGameButton;
 
-fn handle_main_menu_button(
+#[derive(Component)]
+pub struct ButtonAction {
+    pub on_hover: fn() -> (),
+    pub on_pressed: fn() -> (),
+}
+
+pub fn handle_buttons(q_interaction: Query<(&Interaction, &ButtonAction), Changed<Interaction>>) {
+    for (interaction, action) in &q_interaction {
+        match *interaction {
+            Interaction::Pressed => {
+                (action.on_pressed)();
+            }
+            Interaction::Hovered => {
+                (action.on_hover)();
+            }
+            _ => (),
+        }
+    }
+}
+
+pub fn handle_main_menu_button(
     q_interaction: Query<&Interaction, (Changed<Interaction>, With<MainMenuButton>)>,
     mut next_app_state: ResMut<NextState<AppState>>,
 ) {
@@ -22,7 +42,7 @@ fn handle_main_menu_button(
     }
 }
 
-fn handle_new_game_button(
+pub fn handle_new_game_button(
     q_interaction: Query<&Interaction, (Changed<Interaction>, With<StartGameButton>)>,
     mut next_app_state: ResMut<NextState<AppState>>,
 ) {
@@ -36,7 +56,7 @@ fn handle_new_game_button(
     }
 }
 
-fn main_menu_setup(mut commands: Commands) {
+pub fn main_menu_setup(mut commands: Commands) {
     info!("Seting up mai menu");
     commands
         .spawn(NodeBundle {
@@ -54,8 +74,6 @@ fn main_menu_setup(mut commands: Commands) {
             parent
                 .spawn(ButtonBundle {
                     style: Style {
-                        width: Val::Px(150.0),
-                        height: Val::Px(65.0),
                         border: UiRect::all(Val::Px(5.0)),
                         // horizontally center child text
                         justify_content: JustifyContent::Center,
@@ -80,19 +98,22 @@ fn main_menu_setup(mut commands: Commands) {
         });
 }
 
-fn main_menu_cleanup(mut commands: Commands, q_menu_items: Query<Entity, With<MainMenuMarker>>) {
+pub fn main_menu_cleanup(
+    mut commands: Commands,
+    q_menu_items: Query<Entity, With<MainMenuMarker>>,
+) {
     for entity in &q_menu_items {
         commands.entity(entity).despawn_recursive();
     }
 }
 
 #[derive(Component)]
-struct GameoverMenuMarker;
+pub struct GameoverMenuMarker;
 
 #[derive(Component)]
-struct MainMenuButton;
+pub struct MainMenuButton;
 
-fn gameover_menu_setup(mut commands: Commands) {
+pub fn gameover_menu_setup(mut commands: Commands) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -109,8 +130,6 @@ fn gameover_menu_setup(mut commands: Commands) {
             parent
                 .spawn(ButtonBundle {
                     style: Style {
-                        width: Val::Px(150.0),
-                        height: Val::Px(65.0),
                         border: UiRect::all(Val::Px(5.0)),
                         // horizontally center child text
                         justify_content: JustifyContent::Center,
@@ -137,8 +156,6 @@ fn gameover_menu_setup(mut commands: Commands) {
             parent
                 .spawn(ButtonBundle {
                     style: Style {
-                        width: Val::Px(150.0),
-                        height: Val::Px(65.0),
                         border: UiRect::all(Val::Px(5.0)),
                         // horizontally center child text
                         justify_content: JustifyContent::Center,
@@ -163,31 +180,11 @@ fn gameover_menu_setup(mut commands: Commands) {
         });
 }
 
-fn gameover_menu_cleanup(
+pub fn gameover_menu_cleanup(
     mut commands: Commands,
     q_menu_items: Query<Entity, With<GameoverMenuMarker>>,
 ) {
     for entity in &q_menu_items {
         commands.entity(entity).despawn_recursive();
-    }
-}
-
-pub struct GameUiPlugin;
-
-impl Plugin for GameUiPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::MainMenu), main_menu_setup)
-            .add_systems(OnExit(AppState::MainMenu), main_menu_cleanup)
-            .add_systems(OnEnter(AppState::GameOver), gameover_menu_setup)
-            .add_systems(OnExit(AppState::GameOver), gameover_menu_cleanup)
-            .add_systems(
-                Update,
-                handle_new_game_button.run_if(in_state(AppState::MainMenu)),
-            )
-            .add_systems(
-                Update,
-                (handle_main_menu_button, handle_new_game_button)
-                    .run_if(in_state(AppState::GameOver)),
-            );
     }
 }

@@ -26,9 +26,8 @@ use leafwing_input_manager::{
 };
 use physics::{ColliderChild, CollisionGroup, ControllerBundle, RigidBodyBundle};
 use rand::{seq::IteratorRandom, Rng};
-use ui::GameUiPlugin;
-
 use std::{collections::HashMap, fs::File, time::Duration, vec::Vec};
+use ui::GameUiPlugin;
 
 use crate::entities::enemy::EnemyBundle;
 
@@ -51,6 +50,20 @@ pub enum GameState {
     Running,
     #[default]
     Paused,
+}
+
+#[derive(Event, Clone)]
+pub struct StateChangeEvent<S: States + Clone> {
+    pub next_state: S,
+}
+
+fn handle_state_change<S: States + Clone>(
+    mut er_state: EventReader<StateChangeEvent<S>>,
+    mut next_state: ResMut<NextState<S>>,
+) {
+    for event in er_state.read() {
+        next_state.set(event.next_state.clone());
+    }
 }
 
 #[derive(Event, Default)]
@@ -86,6 +99,16 @@ fn main() {
             gravity: Vec2::new(0.0, -800.0),
             ..Default::default()
         });
+
+    app.add_systems(
+        Update,
+        (
+            handle_state_change::<GameState>,
+            handle_state_change::<AppState>,
+        ),
+    )
+    .add_event::<StateChangeEvent<GameState>>()
+    .add_event::<StateChangeEvent<AppState>>();
 
     app.add_systems(OnEnter(GameState::Paused), pause_time);
     app.add_systems(OnEnter(GameState::Running), resume_time);
