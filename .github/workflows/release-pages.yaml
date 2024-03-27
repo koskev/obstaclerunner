@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          lfs: true
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -38,3 +40,4 @@ jobs:
         with:
           branch: gh-pages
           folder: dist
+          single-commit: true
