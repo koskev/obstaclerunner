@@ -1,7 +1,7 @@
 use animation::{
     animate_sprites, AnimationBundle, AnimationIndices, AnimationTimer, Model, Models,
 };
-use bevy::{prelude::*, render::view::RenderLayers, window::PrimaryWindow};
+use bevy::{asset::AssetMetaCheck, prelude::*, render::view::RenderLayers, window::PrimaryWindow};
 use bevy_common_assets::yaml::YamlAssetPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_parallax::{
@@ -73,6 +73,9 @@ fn main() {
     let mut app = App::new();
 
     app.init_state::<GameState>().init_state::<AppState>();
+
+    // Fix Trunk
+    app.insert_resource(AssetMetaCheck::Never);
 
     app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(WorldInspectorPlugin::new())
