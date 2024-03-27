@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use bevy::prelude::*;
+use bevy::{input::touch::TouchPhase, prelude::*};
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
 
@@ -68,6 +68,27 @@ impl Default for PlayerBundle {
             player: Player::default(),
             input: InputManagerBundle::with_map(input_map),
             locked_axes: LockedAxes::ROTATION_LOCKED | LockedAxes::TRANSLATION_LOCKED_X,
+        }
+    }
+}
+
+fn inject_touch(
+    mut er_touch: EventReader<TouchInput>,
+    mut q_player: Query<&mut ActionState<PlayerAction>, With<Player>>,
+) {
+    for event in er_touch.read() {
+        match event.phase {
+            TouchPhase::Started => {
+                for mut action in &mut q_player {
+                    action.press(&PlayerAction::Jump);
+                }
+            }
+            TouchPhase::Ended => {
+                for mut action in &mut q_player {
+                    action.release(&PlayerAction::Jump);
+                }
+            }
+            _ => (),
         }
     }
 }
@@ -239,6 +260,7 @@ impl Plugin for PlayerPlugin {
                     collision,
                     handle_hit,
                     handle_death,
+                    inject_touch,
                 )
                     .run_if(in_state(GameState::Running))
                     .run_if(in_state(AppState::Game)),
