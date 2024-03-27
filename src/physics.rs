@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use serde::{Deserialize, Serialize};
 
 #[derive(Bundle, Clone)]
 pub struct RigidBodyBundle {
@@ -89,8 +88,6 @@ pub enum CollisionGroup {
     Player,
     Enemy,
     Wall,
-    Spell,
-    Collectible,
     All,
     None,
 }
@@ -102,8 +99,6 @@ impl CollisionGroup {
             Self::Player => Group::GROUP_2,
             Self::Enemy => Group::GROUP_3,
             Self::Wall => Group::GROUP_4,
-            Self::Spell => Group::GROUP_5,
-            Self::Collectible => Group::GROUP_6,
             Self::All => Group::ALL,
             Self::None => Group::NONE,
         }

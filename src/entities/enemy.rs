@@ -1,14 +1,10 @@
-use std::{fs::File, time::Duration};
+use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy_rapier2d::dynamics::LockedAxes;
 use rand::{seq::IteratorRandom, Rng};
 
-use crate::{
-    animation::{Model, Models},
-    physics::ControllerBundle,
-    AppState, GameState,
-};
+use crate::{animation::Models, physics::ControllerBundle, AppState, GameState};
 
 use std::collections::HashMap;
 

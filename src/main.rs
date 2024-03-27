@@ -267,7 +267,7 @@ fn setup_world(mut commands: Commands) {
             ..Default::default()
         })
         .insert(Sensor)
-        .insert(Despawner::default())
+        .insert(Despawner)
         .insert(ActiveEvents::COLLISION_EVENTS);
 }
 
@@ -279,22 +279,19 @@ fn collision(
     q_collider_children: Query<&Parent, With<Collider>>,
 ) {
     for event in er_collision.read() {
-        match event {
-            CollisionEvent::Started(ent1, ent2, _flags) => {
-                let (_despawner, enemy_collider) = if q_despawner.contains(*ent1) {
-                    (*ent1, *ent2)
-                } else if q_despawner.contains(*ent2) {
-                    (*ent2, *ent1)
-                } else {
-                    continue;
-                };
-                if let Ok(parent) = q_collider_children.get(enemy_collider) {
-                    if let Ok(enemy) = q_enemy.get(parent.get()) {
-                        commands.entity(enemy).despawn_recursive();
-                    }
+        if let CollisionEvent::Started(ent1, ent2, _flags) = event {
+            let (_despawner, enemy_collider) = if q_despawner.contains(*ent1) {
+                (*ent1, *ent2)
+            } else if q_despawner.contains(*ent2) {
+                (*ent2, *ent1)
+            } else {
+                continue;
+            };
+            if let Ok(parent) = q_collider_children.get(enemy_collider) {
+                if let Ok(enemy) = q_enemy.get(parent.get()) {
+                    commands.entity(enemy).despawn_recursive();
                 }
             }
-            _ => (),
         }
     }
 }

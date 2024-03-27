@@ -1,5 +1,3 @@
-use std::fs::File;
-
 use bevy::{input::touch::TouchPhase, prelude::*};
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
@@ -126,11 +124,9 @@ fn player_jump(
     mut q_player: Query<(&mut Velocity, &ActionState<PlayerAction>, &Player), With<Player>>,
 ) {
     for (mut velocity, input_data, player) in &mut q_player {
-        if input_data.just_pressed(&PlayerAction::Jump) {
-            if player.is_grounded {
-                info!("jump");
-                velocity.linvel = Vec2::new(0.0, 1.0) * 300.0;
-            }
+        if input_data.just_pressed(&PlayerAction::Jump) && player.is_grounded {
+            info!("jump");
+            velocity.linvel = Vec2::new(0.0, 1.0) * 300.0;
         }
     }
 }
@@ -216,28 +212,24 @@ fn collision(
     mut ew_hit: EventWriter<PlayerHitEvent>,
 ) {
     for event in er_collision.read() {
-        match event {
-            CollisionEvent::Started(ent1, ent2, _flags) => {
-                if let (Ok(ent1_parent), Ok(ent2_parent)) =
-                    (q_parents.get(*ent1), q_parents.get(*ent2))
-                {
-                    let (player, other) = if q_player.contains(ent1_parent.get()) {
-                        (ent1_parent.get(), ent2_parent.get())
-                    } else if q_player.contains(*ent2) {
-                        (ent2_parent.get(), ent1_parent.get())
-                    } else {
-                        continue;
-                    };
-                    // we got a player collision with some other
+        if let CollisionEvent::Started(ent1, ent2, _flags) = event {
+            if let (Ok(ent1_parent), Ok(ent2_parent)) = (q_parents.get(*ent1), q_parents.get(*ent2))
+            {
+                let (player, other) = if q_player.contains(ent1_parent.get()) {
+                    (ent1_parent.get(), ent2_parent.get())
+                } else if q_player.contains(*ent2) {
+                    (ent2_parent.get(), ent1_parent.get())
+                } else {
+                    continue;
+                };
+                // we got a player collision with some other
 
-                    // Hit with enemy -> send event
-                    if let Ok(enemy) = q_enemy.get(other) {
-                        ew_hit.send(PlayerHitEvent { player, enemy });
-                        info!("player with enemy collision! {:?} {:?}", player, enemy);
-                    }
+                // Hit with enemy -> send event
+                if let Ok(enemy) = q_enemy.get(other) {
+                    ew_hit.send(PlayerHitEvent { player, enemy });
+                    info!("player with enemy collision! {:?} {:?}", player, enemy);
                 }
             }
-            _ => (),
         }
     }
 }

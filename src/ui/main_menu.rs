@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{handle_gameover, AppState};
+use crate::AppState;
 
 #[derive(Component)]
 pub struct MainMenuMarker;
@@ -33,11 +33,8 @@ pub fn handle_main_menu_button(
     mut next_app_state: ResMut<NextState<AppState>>,
 ) {
     for interaction in &q_interaction {
-        match *interaction {
-            Interaction::Pressed => {
-                next_app_state.set(AppState::MainMenu);
-            }
-            _ => (),
+        if *interaction == Interaction::Pressed {
+            next_app_state.set(AppState::MainMenu);
         }
     }
 }
@@ -47,11 +44,8 @@ pub fn handle_new_game_button(
     mut next_app_state: ResMut<NextState<AppState>>,
 ) {
     for interaction in &q_interaction {
-        match *interaction {
-            Interaction::Pressed => {
-                next_app_state.set(AppState::Game);
-            }
-            _ => (),
+        if *interaction == Interaction::Pressed {
+            next_app_state.set(AppState::Game);
         }
     }
 }
