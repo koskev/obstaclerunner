@@ -1,11 +1,9 @@
-use animation::{
-    animate_sprites, AnimationBundle, AnimationIndices, AnimationTimer, Model, Models,
-};
+use animation::{animate_sprites, Models};
 use bevy::{
     asset::AssetMetaCheck,
     prelude::*,
-    render::{camera::Viewport, view::RenderLayers},
-    window::{PrimaryWindow, WindowMode, WindowResized, WindowResolution},
+    render::view::RenderLayers,
+    window::{PrimaryWindow, WindowResized, WindowResolution},
 };
 use bevy_common_assets::yaml::YamlAssetPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -14,27 +12,22 @@ use bevy_parallax::{
     ParallaxMoveEvent, ParallaxPlugin, RepeatStrategy,
 };
 use bevy_rapier2d::{
-    dynamics::{LockedAxes, RigidBody, Velocity},
-    geometry::{ActiveCollisionTypes, ActiveEvents, Collider, CollisionGroups, Sensor},
+    dynamics::RigidBody,
+    geometry::{ActiveEvents, Collider, CollisionGroups, Sensor},
     pipeline::CollisionEvent,
     plugin::{NoUserData, RapierConfiguration, RapierPhysicsPlugin},
     render::RapierDebugRenderPlugin,
 };
 use entities::{
     character::{CharacterProperties, CharacterProperty},
-    enemy::{self, Enemy, EnemyPlugin},
-    player::{Player, PlayerBundle, PlayerCamera, PlayerCameraBundle, PlayerPlugin},
+    enemy::{Enemy, EnemyPlugin},
+    player::{PlayerCamera, PlayerCameraBundle, PlayerPlugin},
 };
 use input::PlayerAction;
-use leafwing_input_manager::{
-    action_state::ActionState, input_map::InputMap, plugin::InputManagerPlugin, InputManagerBundle,
-};
-use physics::{ColliderChild, CollisionGroup, ControllerBundle, RigidBodyBundle};
-use rand::{seq::IteratorRandom, Rng};
-use std::{collections::HashMap, fs::File, time::Duration, vec::Vec};
+use leafwing_input_manager::plugin::InputManagerPlugin;
+use physics::{CollisionGroup, RigidBodyBundle};
+use std::vec::Vec;
 use ui::GameUiPlugin;
-
-use crate::entities::enemy::EnemyBundle;
 
 mod animation;
 mod entities;
