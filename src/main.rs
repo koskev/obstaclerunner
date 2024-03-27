@@ -6,7 +6,7 @@ use bevy::{
     window::{PrimaryWindow, WindowResized, WindowResolution},
 };
 use bevy_common_assets::yaml::YamlAssetPlugin;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+
 use bevy_parallax::{
     CreateParallaxEvent, LayerData, LayerRepeat, LayerSpeed, ParallaxCameraComponent,
     ParallaxMoveEvent, ParallaxPlugin, RepeatStrategy,
@@ -28,6 +28,9 @@ use leafwing_input_manager::plugin::InputManagerPlugin;
 use physics::{CollisionGroup, RigidBodyBundle};
 use std::vec::Vec;
 use ui::GameUiPlugin;
+
+#[cfg(debug_assertions)]
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 mod animation;
 mod entities;
@@ -85,10 +88,8 @@ fn main() {
                 ..Default::default()
             }),
     )
-    .add_plugins(WorldInspectorPlugin::new())
     .add_plugins(InputManagerPlugin::<PlayerAction>::default())
     .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-    .add_plugins(RapierDebugRenderPlugin::default())
     .add_plugins(PlayerPlugin)
     .add_plugins(EnemyPlugin)
     .add_plugins(GameUiPlugin)
@@ -99,6 +100,12 @@ fn main() {
         "character.yaml",
     ]))
     .add_plugins(ParallaxPlugin);
+
+    #[cfg(debug_assertions)]
+    {
+        app.add_plugins(WorldInspectorPlugin::new())
+            .add_plugins(RapierDebugRenderPlugin::default());
+    }
 
     app.add_systems(Startup, (setup_camera, setup_background).chain())
         .add_systems(

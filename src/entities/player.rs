@@ -107,6 +107,7 @@ fn pause_game(
     }
 }
 
+#[cfg(debug_assertions)]
 fn toggle_debug(
     q_player: Query<&ActionState<PlayerAction>, With<Player>>,
     mut debug: ResMut<DebugRenderContext>,
@@ -248,7 +249,6 @@ impl Plugin for PlayerPlugin {
                     player_duck,
                     player_death,
                     ground_check,
-                    toggle_debug,
                     collision,
                     handle_hit,
                     handle_death,
@@ -260,5 +260,7 @@ impl Plugin for PlayerPlugin {
             .init_resource::<PlayerHandle>()
             .add_event::<PlayerHitEvent>()
             .add_event::<PlayerDeathEvent>();
+        #[cfg(debug_assertions)]
+        app.add_systems(Update, toggle_debug);
     }
 }
