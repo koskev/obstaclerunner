@@ -40,10 +40,10 @@ pub enum ColliderType {
     CapsuleY(CapsuleColliderY),
 }
 
-impl Into<Collider> for ColliderType {
-    fn into(self) -> Collider {
-        match self {
-            Self::CapsuleY(data) => Collider::capsule_y(data.height, data.radius),
+impl From<ColliderType> for Collider {
+    fn from(value: ColliderType) -> Self {
+        match value {
+            ColliderType::CapsuleY(data) => Collider::capsule_y(data.height, data.radius),
         }
     }
 }
