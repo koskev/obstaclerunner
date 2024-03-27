@@ -1,7 +1,12 @@
 use animation::{
     animate_sprites, AnimationBundle, AnimationIndices, AnimationTimer, Model, Models,
 };
-use bevy::{asset::AssetMetaCheck, prelude::*, render::view::RenderLayers, window::PrimaryWindow};
+use bevy::{
+    asset::AssetMetaCheck,
+    prelude::*,
+    render::{camera::Viewport, view::RenderLayers},
+    window::{PrimaryWindow, WindowMode, WindowResized, WindowResolution},
+};
 use bevy_common_assets::yaml::YamlAssetPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_parallax::{
@@ -18,7 +23,7 @@ use bevy_rapier2d::{
 use entities::{
     character::{CharacterProperties, CharacterProperty},
     enemy::{self, Enemy, EnemyPlugin},
-    player::{Player, PlayerBundle, PlayerCameraBundle, PlayerPlugin},
+    player::{Player, PlayerBundle, PlayerCamera, PlayerCameraBundle, PlayerPlugin},
 };
 use input::PlayerAction;
 use leafwing_input_manager::{
@@ -77,23 +82,32 @@ fn main() {
     // Fix Trunk
     app.insert_resource(AssetMetaCheck::Never);
 
-    app.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
-        .add_plugins(WorldInspectorPlugin::new())
-        .add_plugins(InputManagerPlugin::<PlayerAction>::default())
-        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugins(RapierDebugRenderPlugin::default())
-        .add_plugins(PlayerPlugin)
-        .add_plugins(EnemyPlugin)
-        .add_plugins(GameUiPlugin)
-        .add_plugins(YamlAssetPlugin::<CharacterProperties>::new(&[
-            "characters.yaml",
-        ]))
-        .add_plugins(YamlAssetPlugin::<CharacterProperty>::new(&[
-            "character.yaml",
-        ]))
-        .add_plugins(ParallaxPlugin);
+    app.add_plugins(
+        DefaultPlugins
+            .set(ImagePlugin::default_nearest())
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+    )
+    .add_plugins(WorldInspectorPlugin::new())
+    .add_plugins(InputManagerPlugin::<PlayerAction>::default())
+    .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+    .add_plugins(RapierDebugRenderPlugin::default())
+    .add_plugins(PlayerPlugin)
+    .add_plugins(EnemyPlugin)
+    .add_plugins(GameUiPlugin)
+    .add_plugins(YamlAssetPlugin::<CharacterProperties>::new(&[
+        "characters.yaml",
+    ]))
+    .add_plugins(YamlAssetPlugin::<CharacterProperty>::new(&[
+        "character.yaml",
+    ]))
+    .add_plugins(ParallaxPlugin);
 
-    app.add_systems(Startup, (setup_camera, setup_background))
+    app.add_systems(Startup, (setup_camera, setup_background).chain())
         .add_systems(
             Update,
             (update_world, animate_sprites, collision).run_if(in_state(GameState::Running)),
@@ -110,6 +124,7 @@ fn main() {
             handle_state_change::<AppState>,
         ),
     )
+    .add_systems(Update, on_resize)
     .add_event::<StateChangeEvent<GameState>>()
     .add_event::<StateChangeEvent<AppState>>();
 
@@ -165,25 +180,9 @@ fn update_world(
 }
 
 fn setup_background(
-    mut commands: Commands,
     mut ew_create_parallax: EventWriter<CreateParallaxEvent>,
+    q_camera: Query<Entity, With<ParallaxCameraComponent>>,
 ) {
-    let mut parallax_camera = Camera2dBundle {
-        camera: Camera {
-            order: -1,
-            ..Default::default()
-        },
-        ..Default::default()
-    };
-    parallax_camera.projection.scale = 0.3;
-
-    let parallax_entity = commands
-        .spawn(parallax_camera)
-        .insert(ParallaxCameraComponent::new(1))
-        .insert(RenderLayers::layer(1))
-        .insert(Name::new("Parallax Camera"))
-        .id();
-
     let layer_speeds: Vec<f32> = vec![0.1, 0.6, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
     let layers: Vec<LayerData> = layer_speeds
         .iter()
@@ -201,22 +200,55 @@ fn setup_background(
         })
         .collect();
 
+    let parallax_entity = q_camera.single();
     ew_create_parallax.send(CreateParallaxEvent {
         camera: parallax_entity,
         layers_data: layers,
     });
 }
 
+fn on_resize(
+    mut er_resize: EventReader<WindowResized>,
+    mut q_window: Query<&mut Window, With<PrimaryWindow>>,
+    mut q_camera: Query<&mut Transform, With<PlayerCamera>>,
+) {
+    for event in er_resize.read() {
+        for mut window in &mut q_window {
+            window.resolution = WindowResolution::new(event.width, event.height);
+            for mut transform in &mut q_camera {
+                // TODO: remove fixed values
+                transform.translation.y = window.height() * 0.1;
+                transform.translation.x = window.width() * 0.1;
+            }
+        }
+    }
+}
+
 fn setup_camera(mut commands: Commands) {
     // spawn camera
     let mut camera_bundle = PlayerCameraBundle::default();
     camera_bundle.camera.projection.scale = 0.25;
-    camera_bundle.camera.transform.translation.y += 100.0;
-    camera_bundle.camera.transform.translation.x += 200.0;
 
-    commands
-        .spawn(camera_bundle)
-        .insert(Name::new("Player Camera"));
+    let mut cam_cmd = commands.spawn(camera_bundle);
+    cam_cmd.insert(Name::new("Player Camera"));
+
+    let mut parallax_camera = Camera2dBundle {
+        camera: Camera {
+            order: -1,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    parallax_camera.projection.scale = 0.25;
+    // TODO: remove fixed values
+    parallax_camera.transform.translation.y = -130.0;
+
+    cam_cmd.with_children(|p| {
+        p.spawn(parallax_camera)
+            .insert(ParallaxCameraComponent::new(1))
+            .insert(RenderLayers::layer(1))
+            .insert(Name::new("Parallax Camera"));
+    });
 }
 
 fn setup_world(mut commands: Commands) {
