@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::dynamics::LockedAxes;
 use rand::{seq::IteratorRandom, Rng};
 
-use crate::{animation::Models, physics::ControllerBundle, AppState, GameState};
+use crate::{model::Models, physics::ControllerBundle, AppState, GameState};
 
 use std::collections::HashMap;
 

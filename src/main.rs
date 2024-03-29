@@ -1,10 +1,10 @@
-use animation::{AnimationPlugin, Models};
 use bevy::{
     asset::AssetMetaCheck,
     prelude::*,
     render::view::RenderLayers,
     window::{PrimaryWindow, WindowResized, WindowResolution},
 };
+use bevy_2d_animations::AnimationPlugin;
 use bevy_common_assets::yaml::YamlAssetPlugin;
 
 use bevy_parallax::{
@@ -25,6 +25,7 @@ use entities::{
 };
 use input::PlayerAction;
 use leafwing_input_manager::plugin::InputManagerPlugin;
+use model::Models;
 use physics::{CollisionGroup, RigidBodyBundle};
 use std::vec::Vec;
 use ui::GameUiPlugin;
@@ -32,9 +33,9 @@ use ui::GameUiPlugin;
 #[cfg(debug_assertions)]
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
-mod animation;
 mod entities;
 mod input;
+mod model;
 mod physics;
 mod ui;
 

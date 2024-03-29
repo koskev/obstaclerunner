@@ -21,6 +21,7 @@ bevy = { version = "0.13.1", features = ["wayland"] }
 bevy-parallax = "0.8.0"
 bevy_common_assets = { version = "0.10.0", features = ["yaml"] }
 bevy_rapier2d = { version = "0.25.0", features = ["wasm-bindgen", "serde", "serde-serialize"] }
+bevy_2d_animations = { git = "https://github.com/koskev/bevy_2d_animations"}
 leafwing-input-manager = "0.13.3"
 rand = "0.8.5"
 serde = { version = "1.0.197", features = ["derive"] }

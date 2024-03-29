@@ -1,9 +1,10 @@
 use bevy::prelude::*;
+use bevy_2d_animations::{Animated, AnimatedSprite};
 use bevy_rapier2d::geometry::Collider;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    animation::{Animated, AnimatedSprite, Model},
+    model::Model,
     physics::{ColliderChild, ControllerBundle},
 };
 

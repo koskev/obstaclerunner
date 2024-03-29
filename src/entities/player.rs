@@ -1,9 +1,9 @@
 use bevy::{input::touch::TouchPhase, prelude::*};
+use bevy_2d_animations::{Animated, AnimatedSprite};
 use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
 
 use crate::{
-    animation::{Animated, AnimatedSprite},
     input::PlayerAction,
     physics::{CollisionGroup, ControllerBundle},
     AppState, GameState,
