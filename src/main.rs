@@ -1,4 +1,4 @@
-use animation::{animate_sprites, Models};
+use animation::{AnimationPlugin, Models};
 use bevy::{
     asset::AssetMetaCheck,
     prelude::*,
@@ -93,6 +93,7 @@ fn main() {
     .add_plugins(PlayerPlugin)
     .add_plugins(EnemyPlugin)
     .add_plugins(GameUiPlugin)
+    .add_plugins(AnimationPlugin)
     .add_plugins(YamlAssetPlugin::<CharacterProperties>::new(&[
         "characters.yaml",
     ]))
@@ -110,7 +111,7 @@ fn main() {
     app.add_systems(Startup, (setup_camera, setup_background).chain())
         .add_systems(
             Update,
-            (update_world, animate_sprites, collision).run_if(in_state(GameState::Running)),
+            (update_world, collision).run_if(in_state(GameState::Running)),
         )
         .insert_resource(RapierConfiguration {
             gravity: Vec2::new(0.0, -800.0),

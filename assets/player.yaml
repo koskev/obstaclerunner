@@ -8,10 +8,16 @@ rows: 1
 offset_tiles:
   - 8.0
   - 0.0
-animation_indices:
-  first: 0
-  last: 6
-animation_speed: 0.1
+animations:
+  - name: idle
+    speed: 0.1
+    indices:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
 colliders:
   - collider:
       type: capsule_y
