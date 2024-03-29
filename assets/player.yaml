@@ -18,6 +18,12 @@ animations:
       - 3
       - 4
       - 5
+      - 6
+  - name: jump
+    speed: 0.1
+    indices:
+      - 7
+      - 8
 colliders:
   - collider:
       type: capsule_y

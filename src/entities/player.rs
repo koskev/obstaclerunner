@@ -3,6 +3,7 @@ use bevy_rapier2d::prelude::*;
 use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
 
 use crate::{
+    animation::{Animated, AnimatedSprite},
     input::PlayerAction,
     physics::{CollisionGroup, ControllerBundle},
     AppState, GameState,
@@ -122,21 +123,30 @@ fn toggle_debug(
 }
 
 fn player_jump(
-    mut q_player: Query<(&mut Velocity, &ActionState<PlayerAction>, &Player), With<Player>>,
+    mut q_player: Query<
+        (
+            &mut Velocity,
+            &ActionState<PlayerAction>,
+            &Player,
+            &mut AnimatedSprite,
+        ),
+        With<Player>,
+    >,
 ) {
-    for (mut velocity, input_data, player) in &mut q_player {
+    for (mut velocity, input_data, player, mut animation) in &mut q_player {
         if input_data.just_pressed(&PlayerAction::Jump) && player.is_grounded {
             info!("jump");
             velocity.linvel = Vec2::new(0.0, 1.0) * 300.0;
+            animation.queue_animation("jump", false, None);
         }
     }
 }
 
 fn ground_check(
-    mut q_player: Query<(&mut Player, &Transform)>,
+    mut q_player: Query<(&mut Player, &Transform, &mut AnimatedSprite)>,
     rapier_context: Res<RapierContext>,
 ) {
-    for (mut player, transform) in &mut q_player {
+    for (mut player, transform, mut animation) in &mut q_player {
         let source = transform.translation.xy();
         let direction = Vec2::new(0.0, -1.0);
         // TODO: read from player
@@ -151,7 +161,10 @@ fn ground_check(
                 CollisionGroup::Wall.group(),
             )),
         ) {
-            player.is_grounded = true;
+            if !player.is_grounded {
+                player.is_grounded = true;
+                animation.queue_animation("idle", true, None);
+            }
         } else {
             player.is_grounded = false;
         }
